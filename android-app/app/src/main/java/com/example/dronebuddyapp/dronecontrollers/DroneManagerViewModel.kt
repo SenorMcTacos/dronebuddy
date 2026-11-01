@@ -81,6 +81,8 @@ class DroneManagerViewModel(
         port = BRIDGE_PORT,
         handler = bridgeHandler,
         onSay = speechPlayer::speak,
+        onListening = { bridgeLog("Bridge running, waiting for Python on port $BRIDGE_PORT", LogItem.Status.INFO) },
+        onServerError = { e -> bridgeLog("Bridge failed to start: ${e.message}", LogItem.Status.ERROR) },
     )
 
     init {
@@ -88,7 +90,6 @@ class DroneManagerViewModel(
         // Lets the server rebind its port straight away if the app is restarted
         bridgeServer.isReuseAddr = true
         bridgeServer.start()
-        bridgeLog("Listening for Python on port $BRIDGE_PORT", LogItem.Status.INFO)
 
         // The camera feed and telemetry need a connected aircraft (and an initialized SDK)
         viewModelScope.launch {

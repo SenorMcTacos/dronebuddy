@@ -39,6 +39,10 @@ class BridgeServer(
     private val handler: Handler,
     private val connectionLossTimeoutMs: Long = 3000L,
     private val onSay: (BridgeMessage.Say) -> Unit = {},
+    /** The server is bound to its port and accepting the laptop's connection. */
+    private val onListening: () -> Unit = {},
+    /** The server itself failed, e.g. it couldn't bind its port, so nothing can connect. */
+    private val onServerError: (Exception) -> Unit = {},
 ) : WebSocketServer(InetSocketAddress(port)) {
 
     /**
@@ -162,7 +166,11 @@ class BridgeServer(
 
     override fun onError(conn: WebSocket?, ex: Exception) {
         Log.e(TAG, "socket error", ex)
-        if (conn != null && conn === activeClient) {
+        if (conn == null) {
+            // java-websocket reports server-level failures (like the port being in
+            // use) with no connection
+            onServerError(ex)
+        } else if (conn === activeClient) {
             handler.onClientDisconnected()
         }
     }
@@ -170,6 +178,7 @@ class BridgeServer(
     override fun onStart() {
         Log.i(TAG, "listening on port $port")
         startWatchdog()
+        onListening()
     }
 
     private fun startWatchdog() {
