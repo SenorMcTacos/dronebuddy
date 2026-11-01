@@ -10,5 +10,6 @@ class DroneManager(context: Context) {
     val droneConnectionControl = DBDroneConnectionControl(context)
     val droneFlightControl = DBDroneFlightControl()
     val droneKeyControl = DBDroneKeyControl()
+    val droneVideoManagerControl = DBDroneCameraStreamControl()
 
 }
