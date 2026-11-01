@@ -1,5 +1,10 @@
 # Connecting an Android app to the bridge
 
+> **The team's app, `android-app/`, already has the bridge. Nothing in this
+> guide needs doing for it.** See [android-app/README.md](android-app/README.md)
+> for what's where and how to test it. This guide is the reference for how it
+> was put together, and for adding the bridge to any other app.
+
 For anyone building the Android (Kotlin) app that flies the drone and wants
 the Python side (`app/`) to control it. The wire format itself is in
 [DRONE_BRIDGE.md](DRONE_BRIDGE.md); this is the how-to.
