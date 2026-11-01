@@ -37,10 +37,10 @@ fun getLocalProperty(key: String) : String{
 }
 
 // This is the most important key, so do a callout for it
-localProperties.getProperty("DJI_APP_API_KEY")
+localProperties.getProperty("DJI_API_KEY")
     ?: throw GradleException(
-        "Missing DJI_APP_API_KEY in android-bridge/local.properties. " +
-                "Add a line: DJI_APP_API_KEY=your_key_from_developer.dji.com " +
+        "Missing DJI_API_KEY in android-bridge/local.properties. " +
+                "Add a line: DJI_API_KEY=your_key_from_developer.dji.com " +
                 "(this file is gitignored and never committed)."
     )
 
@@ -48,7 +48,7 @@ localProperties.getProperty("DJI_APP_API_KEY")
 android {
     namespace = "com.example.dronebuddyapp"
     compileSdk {
-        // version = release(37)
+        // version = release(37)/home/senortaco/Things/School/DroneBuddyProject/dronebuddy/android-app
         version = release(36)
     }
 
@@ -63,7 +63,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Manifest Stuff
-        manifestPlaceholders["DJI_APP_API_KEY"] = getLocalProperty("DJI_APP_API_KEY")
+        manifestPlaceholders["DJI_API_KEY"] = getLocalProperty("DJI_API_KEY")
         ndk {
             abiFilters += "arm64-v8a"
         }

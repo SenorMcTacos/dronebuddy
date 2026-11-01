@@ -73,7 +73,7 @@
             -->
         <meta-data
             android:name="com.dji.sdk.API_KEY"
-            android:value="${DJI_APP_API_KEY}" />
+            android:value="${DJI_API_KEY}" />
 </application>
 
 </manifest>
