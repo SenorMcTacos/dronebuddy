@@ -77,6 +77,7 @@ class HomeFragment : Fragment() {
         // Find TextViews
         val updatableAppConnectionStatus = view.findViewById<TextView>(R.id.updatable_dji_app_connection_status)
         val updatableDroneConnectionStatus = view.findViewById<TextView>(R.id.updatable_dji_drone_connection_status)
+        val updatableliftoffLandingStatus = view.findViewById<TextView>(R.id.updatable_liftoff_landing_status)
 
         // Connect up buttons
         retryAppConnection(btnRetryAppConnection)
@@ -139,6 +140,8 @@ class HomeFragment : Fragment() {
             tv.setTextColor(if (connected) Color.GREEN else Color.RED)
         }
     }
+
+
 
 
 }
