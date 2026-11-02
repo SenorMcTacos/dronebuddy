@@ -43,23 +43,43 @@ class DroneManagerViewModel(
     private val _pythonConnectionStatus = MutableStateFlow(false)
     val pythonConnectionStatus: LiveData<Boolean> = _pythonConnectionStatus.asStateFlow().asLiveData()
 
+    // Connected but nothing heard for 3s (laptop closed, frozen, out of Wi-Fi). The
+    // socket itself can take a minute to notice that, so this is what hands the
+    // drone back to the controller quickly.
+    @Volatile private var pythonSilent = false
+
     // Same as commandHandler, plus updating pythonConnectionStatus and the log
     private val bridgeHandler = object : BridgeServer.Handler by commandHandler {
         override fun onClientConnected() {
+            pythonSilent = false
             _pythonConnectionStatus.value = true
             bridgeLog("Python connected", LogItem.Status.INFO)
             commandHandler.onClientConnected()
+            viewModelScope.launch { updateVirtualStick() }
         }
 
         override fun onClientDisconnected() {
             _pythonConnectionStatus.value = false
             bridgeLog("Python disconnected", LogItem.Status.WARNING)
             commandHandler.onClientDisconnected()
+            viewModelScope.launch { updateVirtualStick() }
         }
 
         override fun onLinkLost() {
+            pythonSilent = true
             bridgeLog("No messages from Python for 3s", LogItem.Status.WARNING)
             commandHandler.onLinkLost()
+            viewModelScope.launch { updateVirtualStick() }
+        }
+
+        override fun onFlightCommand(command: BridgeMessage.FlightCommand) {
+            if (pythonSilent) {
+                // Python is back: hand the drone to it again
+                pythonSilent = false
+                bridgeLog("Python responding again", LogItem.Status.INFO)
+                viewModelScope.launch { updateVirtualStick() }
+            }
+            commandHandler.onFlightCommand(command)
         }
 
         override fun onEmergencyStop() {
@@ -76,6 +96,7 @@ class DroneManagerViewModel(
 
     // Only touched from viewModelScope (main thread)
     private var droneFeedsRunning = false
+    private var virtualStickOn = false
 
     private val bridgeServer = BridgeServer(
         port = BRIDGE_PORT,
@@ -95,6 +116,7 @@ class DroneManagerViewModel(
         viewModelScope.launch {
             droneManager.droneConnectionControl.droneConnectionStatus.collect { connected ->
                 if (connected) startDroneFeeds() else stopDroneFeeds()
+                updateVirtualStick()
             }
         }
     }
@@ -102,9 +124,6 @@ class DroneManagerViewModel(
     private fun startDroneFeeds() {
         if (droneFeedsRunning) return
         droneFeedsRunning = true
-        droneManager.virtualStick.enable { success, error ->
-            if (!success) bridgeLog("Enabling virtual stick failed: $error", LogItem.Status.ERROR)
-        }
         droneManager.cameraStream.startListening { jpegBytes ->
             bridgeServer.sendVideoFrame(jpegBytes)
         }
@@ -132,7 +151,36 @@ class DroneManagerViewModel(
         droneFeedsRunning = false
         droneManager.cameraStream.stopListening()
         droneManager.telemetry.stopListening()
-        droneManager.virtualStick.disable { _, _ -> }
+    }
+
+    /**
+     * Virtual stick is on only while both the drone and the laptop are connected
+     * (and the laptop hasn't gone silent for 3s).
+     * While it's on, the app flies the drone and the controller's sticks are ignored;
+     * the rest of the time the controller flies it as normal. So the pilot can take
+     * off by hand before starting the laptop program, and gets the sticks back the
+     * moment the laptop program quits, or within 3s if the laptop goes silent.
+     * Main thread only.
+     */
+    private fun updateVirtualStick() {
+        val wanted = droneManager.droneConnectionControl.droneConnectionStatus.value &&
+            _pythonConnectionStatus.value && !pythonSilent
+        if (wanted == virtualStickOn) return
+        virtualStickOn = wanted
+        if (wanted) {
+            droneManager.virtualStick.enable { success, error ->
+                if (success) {
+                    bridgeLog("Virtual stick on: the laptop is flying the drone", LogItem.Status.WARNING)
+                } else {
+                    bridgeLog("Enabling virtual stick failed: $error", LogItem.Status.ERROR)
+                    // Try again on the next connection change
+                    viewModelScope.launch { virtualStickOn = false }
+                }
+            }
+        } else {
+            droneManager.virtualStick.disable { _, _ -> }
+            bridgeLog("Virtual stick off: the controller has the drone", LogItem.Status.INFO)
+        }
     }
 
     override fun onCleared() {
@@ -140,6 +188,7 @@ class DroneManagerViewModel(
         bridgeServer.shutdownServer()
         commandHandler.stop()
         stopDroneFeeds()
+        if (virtualStickOn) droneManager.virtualStick.disable { _, _ -> }
         speechPlayer.shutdown()
     }
 

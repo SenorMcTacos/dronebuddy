@@ -228,6 +228,12 @@ Split between the transport (`BridgeServer`) and the app's DJI layer
 - **Safe default** (`DjiCommandHandler`): on client connect, on client
   disconnect, and on socket error, the app forces a hover, never the last
   command received.
+- **Virtual stick only while Python is connected** (`android-app`'s
+  `DroneManagerViewModel`): enabled when both the aircraft and the Python
+  client are connected, disabled as soon as either disconnects or Python
+  goes silent for `connectionLossTimeoutMs` (re-enabled on its next
+  `flight_command`), so the controller's sticks fly the drone whenever
+  Python isn't connected and responsive.
 - **Takeoff and landing are left alone** (`DjiCommandHandler`): from a
   `takeoff`/`land` until the next `flight_command` or `emergency_stop`, none
   of the hovers above are sent. `app/main.py` stops sending commands after

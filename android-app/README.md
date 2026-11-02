@@ -21,7 +21,15 @@ laptop talk to this app over Wi-Fi:
 | `audio/SpeechPlayer.kt` | Speaks the laptop's alerts out loud |
 
 `DroneManagerViewModel` starts all of this when the app opens. When the drone
-connects, it turns on virtual stick and starts the camera and telemetry.
+connects, it starts the camera and telemetry.
+
+**Virtual stick is on only while both the drone and the laptop are
+connected.** Then the app flies the drone and the controller's sticks are
+ignored. The rest of the time the controller flies it as normal: you can take
+off by hand before starting the laptop program, and you get the sticks back as
+soon as the laptop program quits, or within 3 seconds if the laptop goes
+silent (closed, frozen, off the Wi-Fi). The Logs screen says
+"Virtual stick on" / "Virtual stick off" each time it switches.
 
 **Adding something new for the laptop** (a new piece of drone data, a new
 command): keep using `DroneManager` and the ViewModel like the rest of the app,

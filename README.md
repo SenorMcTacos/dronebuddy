@@ -70,10 +70,19 @@ In the window: **SPACE** is the emergency stop (the drone hovers), **q** quits.
    ```
    (Windows PowerShell: `$env:BRIDGE_HOST="<phone ip>"; python -m app.main --drone dji`)
 
-Keep a hand on the controller. Its sticks and DJI's own safety features
-always work and are the fastest way to take back control. The laptop lands
-the drone if it loses sight of the user for 5 seconds, or when the battery
-drops to 20%.
+**Who's flying:** while the laptop program is connected, the phone app flies
+the drone and the controller's sticks are ignored. The rest of the time, the
+controller flies it as normal. So to take back control:
+
+- quit the laptop program (**q**): the sticks work again straight away, and
+  the drone hovers until you move them. If the laptop is closed, freezes or
+  drops off the Wi-Fi, the same happens after 3 seconds;
+- or press the controller's **Pause** button.
+
+Keep a hand on the controller the whole time. The laptop lands the drone if
+it loses sight of the user for 5 seconds, or when the battery drops to 20%.
+DJI's own safety features (return-to-home on signal loss, low battery) always
+stay on.
 
 ## Run the tests
 
