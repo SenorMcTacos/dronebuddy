@@ -16,7 +16,7 @@
         <LinearLayout
             android:id="@+id/layout_dji_app_connection_status"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal">
 
             <LinearLayout
@@ -122,13 +122,13 @@
                     android:id="@+id/header_liftoff_landing_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="DJI App Connection Status" />
+                    android:text="Drone Liftoff/Landing" />
 
                 <Button
                     android:id="@+id/btn_liftoff_landing"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Retry Connect" />
+                    android:text="Activate Liftoff" />
 
             </LinearLayout>
 

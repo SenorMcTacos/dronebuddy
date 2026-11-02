@@ -11,6 +11,10 @@ import android.widget.TextView
 import androidx.fragment.app.activityViewModels
 import com.example.dronebuddyapp.dronecontrollers.DroneManagerViewModel
 import com.example.dronebuddyapp.logcontent.LogItem
+import dji.sdk.keyvalue.key.FlightControllerKey
+import dji.sdk.keyvalue.value.common.EmptyMsg
+import dji.sdk.keyvalue.value.common.Velocity3D
+import dji.v5.common.callback.CommonCallbacks
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -73,19 +77,22 @@ class HomeFragment : Fragment() {
         // Define buttons
         val btnRetryAppConnection = view.findViewById<Button>(R.id.btn_connect_app_retry)
         val btnRetryDroneConnection = view.findViewById<Button>(R.id.btn_connect_drone_retry)
+        val btnLiftoffLandingActivate = view.findViewById<Button>(R.id.btn_liftoff_landing)
 
         // Find TextViews
         val updatableAppConnectionStatus = view.findViewById<TextView>(R.id.updatable_dji_app_connection_status)
         val updatableDroneConnectionStatus = view.findViewById<TextView>(R.id.updatable_dji_drone_connection_status)
-        val updatableliftoffLandingStatus = view.findViewById<TextView>(R.id.updatable_liftoff_landing_status)
+        val updatableLiftoffLandingStatus = view.findViewById<TextView>(R.id.updatable_liftoff_landing_status)
 
         // Connect up buttons
         retryAppConnection(btnRetryAppConnection)
         retryDroneConnection(btnRetryDroneConnection)
+        activateLiftoffLanding(btnLiftoffLandingActivate)
 
         // Connect up TextViews
         connectAppConnectionText(updatableAppConnectionStatus)
         connectDroneConnectionText(updatableDroneConnectionStatus)
+        connectDroneInAirStatus(updatableLiftoffLandingStatus)
     }
 
 
@@ -123,6 +130,39 @@ class HomeFragment : Fragment() {
 
     }
 
+    // keyManager.getValue(KeyTools.createKey(FlightControllerKey.KeyAircraftVelocity))
+//    var aircraftVelocity = object: CommonCallbacks.KeyListener<Velocity3D> {
+//        override fun onValueChange(p0: Velocity3D?, p1: Velocity3D?) {
+//            TODO("Not yet implemented")
+//        }
+//    }
+
+    private fun activateLiftoffLanding(btn: Button) {
+        val flightKeyController = droneManagerViewModels.droneManager.droneFlightKeys
+
+        // This is passed as the btn.post so that the update of the visuals is done in the ui thread
+        // This prevents any crashes due to how sdk thread runs differently
+        fun enableButton() {
+            btn.post {
+                btn.isEnabled = true
+            }
+        }
+        btn.setOnClickListener {
+            // Change buttons to say Land, and change function to landing
+            // Probably pass disable buttons and pass into lambda a reenable when it is done
+            // We want to reenable the button no matter what if it fails or succeeds to prevent softlocks
+            if (droneManagerViewModels.droneInAirStatus.value == true) {
+                flightKeyController.activateDroneLanding({enableButton()}, {enableButton()})
+                btn.isEnabled = false
+            }
+            else {
+                flightKeyController.activateDroneLiftoff({enableButton()}, {enableButton()})
+                btn.isEnabled = false
+            }
+
+        }
+    }
+
     // Look into DroneManagerViewModel for livedata
     private fun connectAppConnectionText(tv: TextView) {
         droneManagerViewModels.droneAppConnectionStatus.observe(viewLifecycleOwner) {
@@ -138,6 +178,22 @@ class HomeFragment : Fragment() {
             connected ->
             tv.text = if (connected) "Connected" else "Disconnected"
             tv.setTextColor(if (connected) Color.GREEN else Color.RED)
+        }
+    }
+
+    private fun connectDroneInAirStatus(tv: TextView) {
+        droneManagerViewModels.droneInAirStatus.observe(viewLifecycleOwner) {
+            connected ->
+            tv.text = if (connected) "Flying" else "Grounded"
+            tv.setTextColor(if (connected) Color.GREEN else Color.RED)
+        }
+    }
+
+    private fun connectDroneInAirButtonStatus(btn: Button) {
+        droneManagerViewModels.droneInAirStatus.observe(viewLifecycleOwner) {
+            connected ->
+            // True means In Air
+            btn.text = if (connected) "Activate Landing?" else "Activate Liftoff?"
         }
     }
 

@@ -34,6 +34,10 @@ class DroneManagerViewModel(
     val droneConnectionStatus: LiveData<Boolean> =
         droneManager.droneConnectionControl.droneConnectionStatus.asLiveData()
 
+    val droneInAirStatus : LiveData<Boolean> =
+        droneManager.droneFlightKeys.droneInAirStatus.asLiveData()
+
+
     // Bridge to the Python side (see BRIDGE_INTEGRATION.md). The laptop connects to
     // this phone on BRIDGE_PORT; the bridge passes its commands to commandHandler,
     // which flies the drone, and sends telemetry and camera frames back.
