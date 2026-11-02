@@ -143,8 +143,14 @@ class MyDroneHandler(private val drone: MyDroneControls) : BridgeServer.Handler 
 }
 ```
 
-Virtual stick must be enabled (`VirtualStickManager.enableVirtualStick`)
-once the aircraft connects, or velocity commands do nothing.
+Velocity commands only do anything while virtual stick is enabled
+(`VirtualStickManager.enableVirtualStick`), and while it is, the
+controller's sticks are ignored. So enable it only while both the aircraft
+and Python are connected, and disable it as soon as Python disconnects or
+`onLinkLost` fires, re-enabling on its next `onFlightCommand`. The pilot can
+then take off by hand, and gets the sticks back whenever Python isn't in
+control. `android-app`'s `DroneManagerViewModel.updateVirtualStick()` does
+exactly this.
 
 ## 3. Start the server, send telemetry and video
 

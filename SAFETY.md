@@ -41,22 +41,22 @@ implementation should touch DJI geofencing or firmware safety settings.
 
 ## What's explicitly not implemented yet
 
-- **Manual-control override.** There is currently no RC/manual input path in
-  this codebase at all — the only active `DroneController` implementations
-  (`mock`, and `dji` once built) only ever receive commands from this
-  autonomy loop. Before any real flight with a person nearby, there should
-  be a way for a human with a physical remote to take priority over the
-  autonomous commands. This needs to be resolved before `--drone dji`
-  autonomous flight, not before ground testing with `--drone mock`.
-- **SDK-level error handling for a DJI bridge** — there is no DJI
-  implementation yet (see [DRONE_BRIDGE.md](DRONE_BRIDGE.md)), so SDK error
-  handling is speculative until that exists.
-- **Video-loss handling.** Today, `main.py` treats a `None` frame from
-  `get_video_frame()` as a reason to stop the loop entirely (see `app/main.py`).
-  That's correct for `mock` (a `None` frame there usually means the stream
-  died), but it hasn't been evaluated against how a DJI bridge would surface
-  a dropped video frame over the WebSocket link — that's an open question
-  for `DJIController`, not yet answered.
+- **Frozen video on DJI.** `DJIController.get_video_frame()` returns the
+  latest frame the phone sent, and keeps returning it if the phone stops
+  sending. So if the drone's video freezes mid-flight, the loop keeps
+  seeing the user where they last were and keeps sending the same small
+  movement command. There's no check on how old the frame is yet. (Before
+  the first frame arrives, `main.py` waits up to 10s, then stops.)
+- **Taking back control is untested on the Mini 3.** The phone app only
+  enables virtual stick while the laptop is connected and responsive (see
+  [android-app/README.md](android-app/README.md)), so quitting the laptop
+  program, or 3s of silence from it, hands the sticks back to the pilot.
+  Whether the Mini 3 really ignores the sticks while virtual stick is on, and
+  whether the controller's Pause button exits it, still has to be confirmed
+  on the aircraft (step 3 of the flight-test procedure in
+  [TESTING.md](TESTING.md)).
+- **SDK error handling** beyond logging (e.g. what to do if enabling virtual
+  stick fails mid-flight) hasn't been tested against real failures.
 
 ## Config knobs affecting safety (`app/config.py` / `.env.example`)
 
