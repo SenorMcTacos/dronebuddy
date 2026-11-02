@@ -1,4 +1,4 @@
-package dji.sampleV5.aircraft.visualbuddy
+package com.example.dronebuddyapp.dronecontrollers
 
 import dji.sdk.keyvalue.key.DJIKey
 import dji.sdk.keyvalue.key.DJIKeyInfo
