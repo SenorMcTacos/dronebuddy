@@ -49,14 +49,14 @@ End-to-end, one frame at a time:
 4. **Drone abstraction.** The resulting action is sent through
    `DroneController` — `MockDroneController` for development/testing with no
    hardware, or `DJIController`, a WebSocket client that talks to the
-   Android bridge app (`android-bridge/`), which holds the actual DJI
+   team's Android app (`android-app/`), which holds the actual DJI
    Mobile SDK session and talks to the physical Mini 3.
 5. **Display.** An OpenCV window shows the live feed with bounding boxes and
    the direction/distance/action overlay; `q` quits.
 
 Run with `python3 -m app.main --drone mock` (no hardware) or `--drone dji`
-(real Mini 3, once the bridge app is running and `BRIDGE_HOST` points at
-it — see [android-bridge/README.md](android-bridge/README.md)).
+(real Mini 3, once the phone app is running and `BRIDGE_HOST` points at
+it — see [android-app/README.md](android-app/README.md)).
 
 ## Audio and voice
 
@@ -117,7 +117,7 @@ Implementations today:
 | Class | File | Status |
 |---|---|---|
 | `MockDroneController` | `app/drone/mock_controller.py` | Working — for running the pipeline with `--drone mock`, and for tests |
-| `DJIController` | `app/drone/dji_controller.py` | Implemented — a WebSocket client to the Android bridge app (`android-bridge/`), which holds the DJI Mobile SDK session, including video (JPEG frames over the same socket). Takeoff is manual (via the RC) — `app/main.py` never calls `takeoff()` itself. See [DRONE_BRIDGE.md](DRONE_BRIDGE.md) and [DJI_MINI_3_SETUP.md](DJI_MINI_3_SETUP.md) |
+| `DJIController` | `app/drone/dji_controller.py` | Implemented — a WebSocket client to the Android app (`android-app/`), which holds the DJI Mobile SDK session, including video (JPEG frames over the same socket). Takeoff is manual (via the RC) — `app/main.py` never calls `takeoff()` itself. See [DRONE_BRIDGE.md](DRONE_BRIDGE.md) and [DJI_MINI_3_SETUP.md](DJI_MINI_3_SETUP.md) |
 | `TelloController` | `archive/tello/tello_controller.py` | Archived, not wired into `--drone` — working at the time it was archived; see [archive/tello/README.md](archive/tello/README.md) |
 
 ## What changed vs. the pre-migration behavior
@@ -155,7 +155,7 @@ app/
   drone/
     controller.py            # DroneController interface, MovementCommand, Telemetry
     mock_controller.py        # in-memory fake for tests / --drone mock
-    dji_controller.py         # WebSocket client to android-bridge/ - see DRONE_BRIDGE.md
+    dji_controller.py         # WebSocket client to the phone app (android-app/) - see DRONE_BRIDGE.md
   safety/
     safety_manager.py        # connection-loss / stale-command / lost-person / battery / e-stop
 archive/
@@ -163,8 +163,13 @@ archive/
     tello_controller.py
     camera_test.py
     test_flight.py            # manual, real-hardware script - never auto-run by pytest
+android-app/                  # the team's Android app: DJI connection + the bridge - see its README
+android-bridge/               # earlier standalone bridge app, kept until android-app/ is flight-tested
 scripts/
+  bridge_check.py             # checks a phone app's bridge from the laptop, without flying
   dji_smoke_test.py           # manual, real-hardware staged takeoff/move/land test for the Mini 3
+tools/
+  analyze_clip.py             # runs a recorded clip through the pipeline, headless, with a report
 tests/
   unit/                       # command conversion, validation, clamping, safety states
   integration/                 # detection(fixture boxes) -> tracking -> follow -> mock drone

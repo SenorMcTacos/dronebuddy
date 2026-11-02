@@ -193,11 +193,14 @@ port 8765 and controls the drone through it. Message format:
   It hands commands to `dronecontrollers/DjiCommandHandler.kt`, which flies the
   drone (virtual stick in velocity mode, takeoff/land) and hovers if the laptop
   disconnects or stops sending commands for 1 second.
-- When the drone connects, the ViewModel enables virtual stick and starts
-  `DjiCameraStreamProvider` (JPEG frames to the laptop) and
-  `DjiTelemetryProvider` (battery, position, heading, speed). Both stop when
-  the drone disconnects. These live in `DroneManager` with the other drone
-  classes.
+- When the drone connects, the ViewModel starts `DjiCameraStreamProvider`
+  (JPEG frames to the laptop) and `DjiTelemetryProvider` (battery, position,
+  heading, speed). Both stop when the drone disconnects. These live in
+  `DroneManager` with the other drone classes.
+- Virtual stick (`updateVirtualStick()` in the ViewModel) is on only while both
+  the drone and the laptop are connected, and turns off if the laptop goes
+  silent for 3 seconds. The rest of the time the controller's sticks fly the
+  drone as normal.
 - `audio/SpeechPlayer.kt` speaks the laptop's `say` alerts out loud.
 
 To test without flying, run `python3 -m scripts.bridge_check --host <phone ip>`
