@@ -1,5 +1,9 @@
 # DroneBuddy Bridge (Android)
 
+> **Replaced by [`android-app/`](../android-app/README.md),** the team's app,
+> which now contains the same bridge. This app stays only until `android-app/`
+> has been tested with the drone; make new changes there.
+
 Android companion app that bridges the Python autonomy process (this repo's
 `app/`) to a DJI Mini 3 via the DJI Mobile SDK V5. Background and protocol
 details live in [`../DRONE_BRIDGE.md`](../DRONE_BRIDGE.md) and

@@ -19,6 +19,9 @@ ACK_TIMEOUT_S = 5.0
 ## websockets closes the connection on any message over max_size (1 MiB by
 ## default). A JPEG video frame from the bridge can get close to that.
 MAX_MESSAGE_BYTES = 16 * 1024 * 1024
+## The phone sends about 10 frames a second. A frame older than this means the
+## feed has stopped, and acting on it would mean following where the user was.
+MAX_FRAME_AGE_S = 1.0
 
 
 class DJIController(DroneController):
@@ -42,9 +45,10 @@ class DJIController(DroneController):
     `json.loads` on every message. See DRONE_BRIDGE.md.
     """
 
-    def __init__(self, host: str, port: int):
+    def __init__(self, host: str, port: int, max_frame_age_s: float = MAX_FRAME_AGE_S):
         self.host = host
         self.port = port
+        self.max_frame_age_s = max_frame_age_s
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
         self._ws = None
@@ -54,6 +58,7 @@ class DJIController(DroneController):
         self._telemetry = Telemetry()
         self._pending_acks: dict = {}
         self._latest_frame: Optional[np.ndarray] = None
+        self._latest_frame_at: Optional[float] = None  # time.monotonic() when it arrived
         self._message_handlers: dict = {}  # message type -> handlers, for messages other parts of the app own
 
     def connect(self) -> None:
@@ -131,6 +136,7 @@ class DJIController(DroneController):
             return
         with self._lock:
             self._latest_frame = frame
+            self._latest_frame_at = time.monotonic()
 
     def _handle_message(self, msg: dict) -> None:
         msg_type = msg.get("type")
@@ -236,6 +242,7 @@ class DJIController(DroneController):
         with self._lock:
             self._connected = False
             self._latest_frame = None
+            self._latest_frame_at = None
 
     def takeoff(self) -> None:
         ack = self._send_and_await_ack({"type": "takeoff"})
@@ -282,11 +289,17 @@ class DJIController(DroneController):
             return self._telemetry
 
     def get_video_frame(self) -> Optional[np.ndarray]:
+        """The latest frame from the phone, or None if there isn't one yet or it's
+        older than max_frame_age_s (the feed has stopped)."""
         # A copy, because callers draw on the frame (app/main.py's HUD) and the
         # loop can ask again before the bridge has sent the next one - drawing
         # on the shared array would stack overlays on top of each other.
         with self._lock:
-            return None if self._latest_frame is None else self._latest_frame.copy()
+            if self._latest_frame is None:
+                return None
+            if time.monotonic() - self._latest_frame_at > self.max_frame_age_s:
+                return None
+            return self._latest_frame.copy()
 
     @property
     def is_connected(self) -> bool:

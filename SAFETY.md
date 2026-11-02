@@ -16,6 +16,7 @@ output directly; every command passes through
 | Stale AI command | No command issued within `STALE_COMMAND_TIMEOUT_S` (default 1.0s) | `HOVER` |
 | Lost person | No `note_person_visible(True)` within `LOST_PERSON_TIMEOUT_S` (default 2.0s) | `HOVER` |
 | Lost person, longer | No `note_person_visible(True)` within `LOST_PERSON_LAND_TIMEOUT_S` (default 5.0s) | `LAND` |
+| Frozen video (DJI) | No new frame from the phone for 1s (`MAX_FRAME_AGE_S` in `dji_controller.py`), once video has started | `main.py` says "Video lost" and ends the session; the phone app then hovers the drone and hands the sticks back to the controller. Without this, the last frame would be reused and the drone would keep following where the user was. At startup `main.py` waits up to 10s for the first frame instead |
 | Invalid command | `MovementCommand` contains `NaN`/`Infinity` on any axis | Rejected, `HOVER` |
 | Command output limits | Any axis outside `[-1.0, 1.0]` | Clamped in `MovementCommand.clamped()` before being sent |
 
@@ -41,22 +42,16 @@ implementation should touch DJI geofencing or firmware safety settings.
 
 ## What's explicitly not implemented yet
 
-- **Manual-control override.** There is currently no RC/manual input path in
-  this codebase at all — the only active `DroneController` implementations
-  (`mock`, and `dji` once built) only ever receive commands from this
-  autonomy loop. Before any real flight with a person nearby, there should
-  be a way for a human with a physical remote to take priority over the
-  autonomous commands. This needs to be resolved before `--drone dji`
-  autonomous flight, not before ground testing with `--drone mock`.
-- **SDK-level error handling for a DJI bridge** — there is no DJI
-  implementation yet (see [DRONE_BRIDGE.md](DRONE_BRIDGE.md)), so SDK error
-  handling is speculative until that exists.
-- **Video-loss handling.** Today, `main.py` treats a `None` frame from
-  `get_video_frame()` as a reason to stop the loop entirely (see `app/main.py`).
-  That's correct for `mock` (a `None` frame there usually means the stream
-  died), but it hasn't been evaluated against how a DJI bridge would surface
-  a dropped video frame over the WebSocket link — that's an open question
-  for `DJIController`, not yet answered.
+- **Taking back control is untested on the Mini 3.** The phone app only
+  enables virtual stick while the laptop is connected and responsive (see
+  [android-app/README.md](android-app/README.md)), so quitting the laptop
+  program, or 3s of silence from it, hands the sticks back to the pilot.
+  Whether the Mini 3 really ignores the sticks while virtual stick is on, and
+  whether the controller's Pause button exits it, still has to be confirmed
+  on the aircraft (step 3 of the flight-test procedure in
+  [TESTING.md](TESTING.md)).
+- **SDK error handling** beyond logging (e.g. what to do if enabling virtual
+  stick fails mid-flight) hasn't been tested against real failures.
 
 ## Config knobs affecting safety (`app/config.py` / `.env.example`)
 
