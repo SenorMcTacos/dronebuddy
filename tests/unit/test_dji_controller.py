@@ -355,3 +355,23 @@ def test_audio_round_trip_over_the_bridge(bridge):
     finally:
         audio.close()
         d.disconnect()
+
+
+def test_get_video_frame_returns_none_once_the_feed_stalls(bridge):
+    # A frozen feed must not keep handing out the last frame: the loop would keep
+    # following where the user was.
+    d = DJIController("127.0.0.1", bridge.port, max_frame_age_s=0.3)
+    d.connect()
+    try:
+        ok, encoded = cv2.imencode(".jpg", np.zeros((4, 4, 3), dtype=np.uint8))
+        assert ok
+        bridge.push_video_frame(encoded.tobytes())
+        _wait_until(lambda: d.get_video_frame() is not None)
+
+        time.sleep(0.5)
+        assert d.get_video_frame() is None
+
+        bridge.push_video_frame(encoded.tobytes())
+        _wait_until(lambda: d.get_video_frame() is not None)
+    finally:
+        d.disconnect()

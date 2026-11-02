@@ -81,6 +81,8 @@ controller flies it as normal. So to take back control:
 
 Keep a hand on the controller the whole time. The laptop lands the drone if
 it loses sight of the user for 5 seconds, or when the battery drops to 20%.
+If the drone's video freezes for more than a second, the laptop says "Video
+lost" and quits, which hands the drone back to the controller.
 DJI's own safety features (return-to-home on signal loss, low battery) always
 stay on.
 

@@ -42,8 +42,11 @@ ALERT_COLOR = (0, 0, 255)
 LABEL_TEXT_COLOR = (0, 0, 0)
 HUD_BACKGROUND = (0, 0, 0)
 
-## The DJI feed only starts arriving over the bridge a moment after connecting.
-## A mock camera returning no frame means the camera/clip has ended, so no wait there.
+## The DJI feed only starts arriving over the bridge a moment after connecting, so
+## wait for the first frame. After that there's no extra wait: DJIController stops
+## returning frames once the feed has stalled for 1s, and the session ends, which
+## hands the drone back to the controller. A mock camera returning no frame means
+## the camera/clip has ended.
 FRAME_WAIT_S = {"dji": 10.0}
 
 
@@ -86,17 +89,24 @@ def run(platform: str, source=None, muted=False, voice_script=None):
     if mic is not None:
         mic.start()
 
+    got_first_frame = False
     try:
         while True:
-            frame = wait_for_frame(drone, FRAME_WAIT_S.get(platform, 0.0))
+            frame = wait_for_frame(drone, 0.0 if got_first_frame else FRAME_WAIT_S.get(platform, 0.0))
 
             if frame is None:
-                if platform == "dji":
+                if platform != "dji":
+                    logger.warning("no frame available from %s", platform)
+                elif got_first_frame:
+                    logger.error("video from the drone stopped - ending the session so the phone "
+                                 "hovers the drone and hands it back to the controller")
+                    session_log.log("video_lost")
+                    audio.say("Video lost", Priority.URGENT)
+                else:
                     logger.error("no video from the DJI bridge after %.0fs - is the aircraft connected "
                                  "in the phone app, and is its camera feed on?", FRAME_WAIT_S["dji"])
-                else:
-                    logger.warning("no frame available from %s", platform)
                 break
+            got_first_frame = True
 
             telemetry = drone.get_telemetry()
             safety.note_telemetry(telemetry)

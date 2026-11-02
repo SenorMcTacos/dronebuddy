@@ -16,6 +16,7 @@ output directly; every command passes through
 | Stale AI command | No command issued within `STALE_COMMAND_TIMEOUT_S` (default 1.0s) | `HOVER` |
 | Lost person | No `note_person_visible(True)` within `LOST_PERSON_TIMEOUT_S` (default 2.0s) | `HOVER` |
 | Lost person, longer | No `note_person_visible(True)` within `LOST_PERSON_LAND_TIMEOUT_S` (default 5.0s) | `LAND` |
+| Frozen video (DJI) | No new frame from the phone for 1s (`MAX_FRAME_AGE_S` in `dji_controller.py`), once video has started | `main.py` says "Video lost" and ends the session; the phone app then hovers the drone and hands the sticks back to the controller. Without this, the last frame would be reused and the drone would keep following where the user was. At startup `main.py` waits up to 10s for the first frame instead |
 | Invalid command | `MovementCommand` contains `NaN`/`Infinity` on any axis | Rejected, `HOVER` |
 | Command output limits | Any axis outside `[-1.0, 1.0]` | Clamped in `MovementCommand.clamped()` before being sent |
 
@@ -41,12 +42,6 @@ implementation should touch DJI geofencing or firmware safety settings.
 
 ## What's explicitly not implemented yet
 
-- **Frozen video on DJI.** `DJIController.get_video_frame()` returns the
-  latest frame the phone sent, and keeps returning it if the phone stops
-  sending. So if the drone's video freezes mid-flight, the loop keeps
-  seeing the user where they last were and keeps sending the same small
-  movement command. There's no check on how old the frame is yet. (Before
-  the first frame arrives, `main.py` waits up to 10s, then stops.)
 - **Taking back control is untested on the Mini 3.** The phone app only
   enables virtual stick while the laptop is connected and responsive (see
   [android-app/README.md](android-app/README.md)), so quitting the laptop
