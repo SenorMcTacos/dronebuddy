@@ -2,6 +2,7 @@ package com.example.dronebuddyapp
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +10,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.activityViewModels
+import com.example.dronebuddyapp.dronecontrollers.DjiVirtualStickController
+import com.example.dronebuddyapp.dronecontrollers.DroneManager
 import com.example.dronebuddyapp.dronecontrollers.DroneManagerViewModel
 import com.example.dronebuddyapp.logcontent.LogItem
 import dji.sdk.keyvalue.key.FlightControllerKey
@@ -78,21 +81,28 @@ class HomeFragment : Fragment() {
         val btnRetryAppConnection = view.findViewById<Button>(R.id.btn_connect_app_retry)
         val btnRetryDroneConnection = view.findViewById<Button>(R.id.btn_connect_drone_retry)
         val btnLiftoffLandingActivate = view.findViewById<Button>(R.id.btn_liftoff_landing)
+        val btnChangeVirtualStickMode = view.findViewById<Button>(R.id.btn_change_virtual_stickmode)
 
         // Find TextViews
         val updatableAppConnectionStatus = view.findViewById<TextView>(R.id.updatable_dji_app_connection_status)
         val updatableDroneConnectionStatus = view.findViewById<TextView>(R.id.updatable_dji_drone_connection_status)
         val updatableLiftoffLandingStatus = view.findViewById<TextView>(R.id.updatable_liftoff_landing_status)
+        val updatableVirtualStickModeStatus = view.findViewById<TextView>(R.id.updatable_virtual_stickmode_status)
 
         // Connect up buttons
         retryAppConnection(btnRetryAppConnection)
         retryDroneConnection(btnRetryDroneConnection)
         activateLiftoffLanding(btnLiftoffLandingActivate)
+        connectDroneInAirButtonStatus(btnLiftoffLandingActivate)
+        activateVirtualStickMode(btnChangeVirtualStickMode)
+        connectVirtualStickModeButtonStatus(btnChangeVirtualStickMode)
+
 
         // Connect up TextViews
         connectAppConnectionText(updatableAppConnectionStatus)
         connectDroneConnectionText(updatableDroneConnectionStatus)
         connectDroneInAirStatus(updatableLiftoffLandingStatus)
+        connectVirtualStickModeStatus(updatableVirtualStickModeStatus)
     }
 
 
@@ -163,6 +173,35 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun activateVirtualStickMode(btn: Button) {
+        val virtStick = droneManagerViewModels.droneManager.virtualStick
+
+        btn.setOnClickListener {
+            // True means Enabled, so we need to disable
+            if (droneManagerViewModels.virtualStickEnableStatus.value == true) {
+                virtStick.disable { success ,error ->
+                    if (success) {
+                        LogItem.addLog("Virtual Stick Override", "Successfully Disabled Virtual Stick Mode", LogItem.Status.INFO)
+                    }
+                    else {
+                        LogItem.addLog("Virtual Stick Override", "Failed to Disable Virtual Stick Mode", LogItem.Status.ERROR)
+                    }
+
+                }
+            }
+            else {
+                virtStick.enable { success, error ->
+                    if (success) {
+                        LogItem.addLog("Virtual Stick Override", "Successfully Enabled Virtual Stick Mode", LogItem.Status.INFO)
+                    }
+                    else {
+                        LogItem.addLog("Virtual Stick Override", "Failed to Enable Virtual Stick Mode", LogItem.Status.ERROR)
+                    }
+                }
+            }
+        }
+    }
+
     // Look into DroneManagerViewModel for livedata
     private fun connectAppConnectionText(tv: TextView) {
         droneManagerViewModels.droneAppConnectionStatus.observe(viewLifecycleOwner) {
@@ -189,6 +228,14 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun connectVirtualStickModeStatus(tv: TextView) {
+        droneManagerViewModels.virtualStickEnableStatus.observe(viewLifecycleOwner) {
+                connected ->
+            tv.text = if (connected) "Enabled" else "Disabled"
+            tv.setTextColor(if (connected) Color.GREEN else Color.RED)
+        }
+    }
+
     private fun connectDroneInAirButtonStatus(btn: Button) {
         droneManagerViewModels.droneInAirStatus.observe(viewLifecycleOwner) {
             connected ->
@@ -196,6 +243,15 @@ class HomeFragment : Fragment() {
             btn.text = if (connected) "Activate Landing?" else "Activate Liftoff?"
         }
     }
+
+    private fun connectVirtualStickModeButtonStatus(btn: Button) {
+        droneManagerViewModels.virtualStickEnableStatus.observe(viewLifecycleOwner) {
+                connected ->
+            // True means virtual stick mode is enabled
+            btn.text = if (connected) "Disable Virtual Stick Mode?" else "Enable Virtual Stick Mode?"
+        }
+    }
+
 
 
 

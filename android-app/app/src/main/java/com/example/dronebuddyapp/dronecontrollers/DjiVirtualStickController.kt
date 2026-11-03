@@ -1,6 +1,7 @@
 package com.example.dronebuddyapp.dronecontrollers
 
 import android.util.Log
+import com.example.dronebuddyapp.logcontent.LogItem
 import dji.sdk.keyvalue.value.flightcontroller.FlightCoordinateSystem
 import dji.sdk.keyvalue.value.flightcontroller.RollPitchControlMode
 import dji.sdk.keyvalue.value.flightcontroller.VerticalControlMode
@@ -9,6 +10,9 @@ import dji.sdk.keyvalue.value.flightcontroller.YawControlMode
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
 import dji.v5.manager.aircraft.virtualstick.VirtualStickManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlin.math.max
 import kotlin.math.min
 
@@ -36,8 +40,11 @@ import kotlin.math.min
  * so a bad MAX_* value here can never exceed what the SDK will accept.
  */
 class DjiVirtualStickController {
+    private val _virtualStickEnabledStatus = MutableStateFlow(false)
+    val virtualStickEnabledStatus: StateFlow<Boolean> = _virtualStickEnabledStatus.asStateFlow()
 
     companion object {
+
         private const val TAG = "DjiVirtualStick"
 
         private const val MAX_HORIZONTAL_SPEED_MPS = 2.0
@@ -54,10 +61,12 @@ class DjiVirtualStickController {
 
     fun enable(onResult: (Boolean, IDJIError?) -> Unit) {
         Log.i(TAG, "enabling virtual stick")
+        LogItem.addLog(TAG, "Enabling Virtual Stick", LogItem.Status.INFO)
         VirtualStickManager.getInstance().enableVirtualStick(object : CommonCallbacks.CompletionCallback {
             override fun onSuccess() {
                 VirtualStickManager.getInstance().setVirtualStickAdvancedModeEnabled(true)
                 onResult(true, null)
+                _virtualStickEnabledStatus.value = true
             }
 
             override fun onFailure(error: IDJIError) {
@@ -68,9 +77,11 @@ class DjiVirtualStickController {
 
     fun disable(onResult: (Boolean, IDJIError?) -> Unit) {
         Log.i(TAG, "disabling virtual stick")
+        LogItem.addLog(TAG, "Disabling Virtual Stick", LogItem.Status.INFO)
         VirtualStickManager.getInstance().disableVirtualStick(object : CommonCallbacks.CompletionCallback {
             override fun onSuccess() {
                 onResult(true, null)
+                _virtualStickEnabledStatus.value = false
             }
 
             override fun onFailure(error: IDJIError) {

@@ -102,6 +102,10 @@ class DroneManagerViewModel(
     private var droneFeedsRunning = false
     private var virtualStickOn = false
 
+    // Please use me instead of the virtualStickOn Variable! This is so UI can be dynamically updated
+    // You need to set the below variable inside of the DjiVirtualStickController.kt file
+    val virtualStickEnableStatus: LiveData<Boolean> = droneManager.virtualStick.virtualStickEnabledStatus.asLiveData()
+
     private val bridgeServer = BridgeServer(
         port = BRIDGE_PORT,
         handler = bridgeHandler,

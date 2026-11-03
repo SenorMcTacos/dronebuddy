@@ -17,14 +17,16 @@ class DBDroneFlightKeys(private val keyControl : DBDroneKeyControl) {
     private val _droneInAirStatus = MutableStateFlow(false)
     val droneInAirStatus : StateFlow<Boolean> = _droneInAirStatus.asStateFlow()
 
-
-    val thing = keyControl.performActionOnce(FlightControllerKey.KeyStartTakeoff, "Start TakeOff")
-
     private fun droneFlyingStatus() {
         val callback = object: CommonCallbacks.KeyListener<Boolean> {
             override fun onValueChange(p0: Boolean?, p1: Boolean?) {
                 if (p1 != null) {
                     _droneInAirStatus.value = p1
+                    LogItem.addLog(
+                        "Flight Keys",
+                        "Drone Flight Status Changed! Is Now: $p1",
+                        LogItem.Status.ERROR
+                    )
                 } else {
                     LogItem.addLog(
                         "Flight Keys",
