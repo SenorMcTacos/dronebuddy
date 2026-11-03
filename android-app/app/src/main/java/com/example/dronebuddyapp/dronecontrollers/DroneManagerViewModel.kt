@@ -1,6 +1,7 @@
 package com.example.dronebuddyapp.dronecontrollers
 
 import android.content.Context
+import android.graphics.Color
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -19,6 +20,7 @@ import com.example.dronebuddyapp.bridge.BridgeServer
 import com.example.dronebuddyapp.logcontent.LogItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.observeOn
 import kotlinx.coroutines.launch
 
 
@@ -36,6 +38,13 @@ class DroneManagerViewModel(
 
     val droneInAirStatus : LiveData<Boolean> =
         droneManager.droneFlightKeys.droneInAirStatus.asLiveData()
+
+    private var initializersRan = false
+
+    // Put all things that need an initializer into this function
+    private fun initializers() {
+        droneManager.droneFlightKeys.initializer()
+    }
 
 
     // Bridge to the Python side (see BRIDGE_INTEGRATION.md). The laptop connects to
@@ -126,6 +135,38 @@ class DroneManagerViewModel(
                 if (connected) startDroneFeeds() else stopDroneFeeds()
                 updateVirtualStick()
             }
+
+
+        }
+
+        // Handle Initializing Initializers based on when the drone is connected
+        viewModelScope.launch {
+            droneManager.droneConnectionControl.droneConnectionStatus.collect { registered ->
+                if (registered && !initializersRan) {
+                    LogItem.addLog(
+                        "Drone ViewModel",
+                        "Drone Connected, Running Initializers",
+                        LogItem.Status.INFO
+                    )
+                    initializers()
+                    LogItem.addLog(
+                        "Drone ViewModel",
+                        "Drone Connected, Initializers Complete",
+                        LogItem.Status.INFO
+                    )
+                    initializersRan = true
+                }
+                else if (!registered && initializersRan) {
+                    LogItem.addLog("Drone ViewModel", "Drone Disconnected, Marking Initializers as Not Ran!", LogItem.Status.WARNING)
+                    initializersRan = false
+                }
+                else if(registered && initializersRan) {
+                    LogItem.addLog("Drone ViewModel", "Drone Connected, but already Initialized?", LogItem.Status.ERROR)
+                }
+                else {
+                    LogItem.addLog("Drone ViewModel", "Drone Disconnected, but already Uninitialized? (Ignore if app just opened)", LogItem.Status.ERROR)
+                }
+            }   
         }
     }
 

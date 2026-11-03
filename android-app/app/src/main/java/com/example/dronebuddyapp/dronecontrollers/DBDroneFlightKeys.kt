@@ -17,6 +17,12 @@ class DBDroneFlightKeys(private val keyControl : DBDroneKeyControl) {
     private val _droneInAirStatus = MutableStateFlow(false)
     val droneInAirStatus : StateFlow<Boolean> = _droneInAirStatus.asStateFlow()
 
+    // This needs to be ran after a drone connection is made, and potentially re-ran everytime a
+    // drone connection is remade
+    fun initializer() {
+        droneFlyingStatus()
+    }
+
     private fun droneFlyingStatus() {
         val callback = object: CommonCallbacks.KeyListener<Boolean> {
             override fun onValueChange(p0: Boolean?, p1: Boolean?) {
@@ -57,7 +63,5 @@ class DBDroneFlightKeys(private val keyControl : DBDroneKeyControl) {
             failLambda = failLambda
         )
     }
-    init {
-        droneFlyingStatus()
-    }
+
 }
